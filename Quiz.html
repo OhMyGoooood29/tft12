@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz TFT</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: black;
+            color: white;
+            text-align: center;
+            margin: 0;
+            padding: 20px;
+        }
+        .nav {
+            background-color: #333;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+        .nav a {
+            float: center;
+            color: #f2f2f2;
+            text-align: center;
+            padding: 14px 16px;
+            text-decoration: none;
+            font-size: 17px;
+        }
+        .nav a:hover {
+            background-color: #ddd;
+            color: black;
+        }
+        .nav a.active {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .quiz-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background-color: #222;
+            border-radius: 10px;
+        }
+        .quiz-button, .answer-button, #stop-quiz {
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        #stop-quiz {
+            background-color: #f44336;
+        }
+        #quiz-container {
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        #question-image {
+            max-width: 200px;
+            max-height: 200px;
+            margin: 20px auto;
+        }
+        #answers {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-top: 20px;
+        }
+        #result, #score, #timer {
+            margin-top: 20px;
+            font-size: 18px;
+        }
+        #timer {
+            font-weight: bold;
+            color: #FFD700;
+        }
+        #slider-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .slider {
+            -webkit-appearance: none;
+            width: 350px;
+            height: 15px;
+            border-radius: 5px;
+            background: #d3d3d3;
+            outline: none;
+            opacity: 0.7;
+            transition: opacity .2s;
+        }
+        .slider:hover {
+            opacity: 1;
+        }
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            background: #4CAF50;
+            cursor: pointer;
+        }
+        .slider::-moz-range-thumb {
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            background: #4CAF50;
+            cursor: pointer;
+        }
+        #sliderValues {
+            display: flex;
+            justify-content: space-between;
+            width: 350px;
+            margin-top: 5px;
+        }
+        #sliderValues span {
+            font-size: 14px;
+        }
+        #transition {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            font-size: 2em;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            z-index: 1000;
+        }
+        #transition.correct {
+            background-color: rgba(0, 128, 0, 0.8);
+        }
+        #transition.incorrect {
+            background-color: rgba(128, 0, 0, 0.8);
+        }
+    </style>
+</head>
+<body>
+    <div class="nav">
+        <a href="Index.html">Accueil</a>
+        <a href="Quiz.html" class="active">Quiz</a>
+        <a href="tft-notes-layout.html">Notes LIVE</a>
+        <a href="#">À propos</a>
+    </div>
+
+    <h1>Quiz TFT</h1>
+<br><br><br><br><br><br><br>
+    <div id="slider-container" class="slider-container">
+        <span>Nombre de questions :</span>
+        <input type="range" min="0" max="2" value="0" class="slider" id="questionSlider">
+        <div id="sliderValues">
+            <span>5</span>
+            <span>10</span>
+            <span>∞</span>
+        </div>
+    </div>
+<br><br>
+    <div id="quiz-menu">
+        <div class="quiz-section">
+            <h2>Quiz 1: Reconnaître les Héros</h2>
+            <button class="quiz-button" onclick="startQuiz('heroes')">Commencer le Quiz des Héros</button>
+        </div>
+
+        <div class="quiz-section">
+            <h2>Quiz 2: Classes et Origines</h2>
+            <button class="quiz-button" onclick="startQuiz('classes-origins')">Commencer le Quiz Classes et Origines</button>
+        </div>
+
+        <div class="quiz-section">
+            <h2>Quiz 3: Rôles des Héros</h2>
+            <button class="quiz-button" onclick="startQuiz('roles')">Commencer le Quiz des Rôles</button>
+        </div>
+    </div>
+
+    <div id="quiz-container">
+        <button id="stop-quiz" onclick="stopQuiz()">Arrêter le Quiz</button>
+        <div id="question"></div>
+        <img id="question-image" src="" alt="Hero Image">
+        <div id="answers"></div>
+        <div id="timer">Temps restant: 10s</div>
+        <div id="result"></div>
+        <div id="score">Score: 0 / 0</div>
+    </div>
+
+    <div id="transition">
+        <div id="transition-text"></div>
+        <div id="question-number"></div>
+    </div>
+
+    <script>
+    const heroes = [
+ {
+            name: "Briar",
+            role: "Attack Fighter",
+            origin1: "Ravenous",
+            origin2: "Eldritch",
+            class1: "Shapeshifter",
+            cost: 5
+        },
+        {
+            name: "Camille",
+            role: "Attack Fighter",
+            origin1: "Chrono",
+            origin2: null,
+            class1: "Multistriker",
+            cost: 5
+        },
+        {
+            name: "Diana",
+            role: "Magic Fighter",
+            origin1: "Frost",
+            origin2: null,
+            class1: "Bastion",
+            cost: 5
+        },
+        {
+            name: "Milio",
+            role: "Magic Caster",
+            origin1: "Faerie",
+            origin2: null,
+            class1: "Scholar",
+            cost: 5
+        },
+        {
+            name: "Morgana",
+            role: "Magic Fighter",
+            origin1: "Witchcraft",
+            origin2: null,
+            class1: "Bat Queen",
+            class2: "Preserver",
+            cost: 5
+        },
+        {
+            name: "Norra & Yuumi",
+            role: "Magic Caster",
+            origin1: "Portal",
+            origin2: null,
+            class1: "Mage",
+			class2: "Best Friends",
+            cost: 5
+        },
+        {
+            name: "Smolder",
+            role: "Attack Carry",
+            origin1: "Dragon",
+            origin2: null,
+            class1: "Blaster",
+            cost: 5
+        },
+        {
+            name: "Xerath",
+            role: "Magic Caster",
+            origin1: "Arcana",
+            origin2: null,
+            class1: "Ascendant",
+            cost: 5
+        },
+        {
+            name: "Fiora",
+            role: "Attack Fighter",
+            origin1: "Witchcraft",
+            origin2: null,
+            class1: "Warrior",
+            cost: 4
+        },
+        {
+            name: "Gwen",
+            role: "Magic Fighter",
+            origin1: "Sugarcraft",
+            origin2: null,
+            class1: "Warrior",
+            cost: 4
+        },
+        {
+            name: "Kalista",
+            role: "Attack Carry",
+            origin1: "Faerie",
+            origin2: null,
+            class1: "Multistriker",
+            cost: 4
+        },
+        {
+            name: "Karma",
+            role: "Magic Caster",
+            origin1: "Chrono",
+            origin2: null,
+            class1: "Incantor",
+            cost: 4
+        },
+        {
+            name: "Nami",
+            role: "Magic Caster",
+            origin1: "Eldritch",
+            origin2: null,
+            class1: "Mage",
+            cost: 4
+        },
+        {
+            name: "Nasus",
+            role: "Attack Tank",
+            origin1: "Pyro",
+            origin2: null,
+            class1: "Shapeshifter",
+            cost: 4
+        },
+        {
+            name: "Olaf",
+            role: "Attack Fighter",
+            origin1: "Frost",
+            origin2: null,
+            class1: "Hunter",
+            cost: 4
+        },
+        {
+            name: "Rakan",
+            role: "Magic Tank",
+            origin1: "Faerie",
+            origin2: null,
+            class1: "Preserver",
+            cost: 4
+        },
+        {
+            name: "Ryze",
+            role: "Magic Caster",
+            origin1: "Portal",
+            origin2: null,
+            class1: "Scholar",
+            cost: 4
+        },
+        {
+            name: "Tahm Kench",
+            role: "Magic Tank",
+            origin1: "Arcana",
+            origin2: null,
+            class1: "Vanguard",
+            cost: 4
+        },
+        {
+            name: "Taric",
+            role: "Magic Tank",
+            origin1: "Portal",
+            origin2: null,
+            class1: "Bastion",
+            cost: 4
+        },
+        {
+            name: "Varus",
+            role: "Attack Caster",
+            origin1: "Pyro",
+            origin2: null,
+            class1: "Blaster",
+            cost: 4
+        },
+        {
+            name: "Bard",
+            role: "Magic Caster",
+            origin1: "Sugarcraft",
+            origin2: null,
+            class1: "Preserver",
+            class2: "Scholar",
+            cost: 3
+        },
+        {
+            name: "Ezreal",
+            role: "Attack Caster",
+            origin1: "Portal",
+            origin2: null,
+            class1: "Blaster",
+            cost: 3
+        },
+        {
+            name: "Hecarim",
+            role: "Attack Fighter",
+            origin1: "Arcana",
+            origin2: null,
+            class1: "Bastion",
+            class2: "Multistriker",
+            cost: 3
+        },
+        {
+            name: "Hwei",
+            role: "Magic Caster",
+            origin1: "Frost",
+            origin2: null,
+            class1: "Blaster",
+            cost: 3
+        },
+        {
+            name: "Jinx",
+            role: "Attack Carry",
+            origin1: "Sugarcraft",
+            origin2: null,
+            class1: "Hunter",
+            cost: 3
+        },
+        {
+            name: "Katarina",
+            role: "Magic Reaper",
+            origin1: "Faerie",
+            origin2: null,
+            class1: "Warrior",
+            cost: 3
+        },
+        {
+            name: "Mordekaiser",
+            role: "Magic Tank",
+            origin1: "Eldritch",
+            origin2: null,
+            class1: "Vanguard",
+            cost: 3
+        },
+        {
+            name: "Neeko",
+            role: "Magic Tank",
+            origin1: "Witchcraft",
+            origin2: null,
+            class1: "Shapeshifter",
+            cost: 3
+        },
+        {
+            name: "Shen",
+            role: "Magic Tank",
+            origin1: "Pyro",
+            origin2: null,
+            class1: "Bastion",
+            cost: 3
+        },
+        {
+            name: "Swain",
+            role: "Magic Tank",
+            origin1: "Frost",
+            origin2: null,
+            class1: "Shapeshifter",
+            cost: 3
+        },
+        {
+            name: "Veigar",
+            role: "Magic Caster",
+            origin1: "Honeymancy",
+            origin2: null,
+            class1: "Mage",
+            cost: 3
+        },
+        {
+            name: "Vex",
+            role: "Magic Tank",
+            origin1: "Chrono",
+            origin2: null,
+            class1: "Mage",
+            cost: 3
+        },
+        {
+            name: "Wukong",
+            role: "Magic Tank",
+            origin1: "Druid",
+            origin2: null,
+            class1: null,
+            cost: 3
+        },
+        {
+            name: "Ahri",
+            role: "Magic Caster",
+            origin1: "Pyro",
+            origin2: "Arcana",
+            class1: "Scholar",
+            cost: 2
+        },
+        {
+            name: "Akali",
+            role: "Attack Reaper",
+            origin1: "Pyro",
+            origin2: null,
+            class1: "Warrior",
+            class2: "Multistriker",
+            cost: 2
+        },
+        {
+            name: "Cassiopeia",
+            role: "Magic Carry",
+            origin1: "Witchcraft",
+            origin2: null,
+            class1: "Incantor",
+            cost: 2
+        },
+        {
+            name: "Galio",
+            role: "Magic Tank",
+            origin1: "Portal",
+            origin2: null,
+            class1: "Vanguard",
+            class2: "Mage",
+            cost: 2
+        },
+        {
+            name: "Kassadin",
+            role: "Magic Fighter",
+            origin1: "Portal",
+            origin2: null,
+            class1: "Multistriker",
+            cost: 2
+        },
+        {
+            name: "Kog'Maw",
+            role: "Attack Carry",
+            origin1: "Honeymancy",
+            origin2: null,
+            class1: "Hunter",
+            cost: 2
+        },
+        {
+            name: "Nilah",
+            role: "Attack Reaper",
+            origin1: "Eldritch",
+            origin2: null,
+            class1: "Warrior",
+            cost: 2
+        },
+        {
+            name: "Nunu",
+            role: "Magic Tank",
+            origin1: "Honeymancy",
+            origin2: null,
+            class1: "Bastion",
+            cost: 2
+        },
+        {
+            name: "Rumble",
+            role: "Magic Tank",
+            origin1: "Sugarcraft",
+            origin2: null,
+            class1: "Vanguard",
+            class2: "Blaster",
+            cost: 2
+        },
+        {
+            name: "Shyvana",
+            role: "Magic Tank",
+            origin1: "Dragon",
+            origin2: null,
+            class1: "Shapeshifter",
+            cost: 2
+        },
+        {
+            name: "Syndra",
+            role: "Magic Caster",
+            origin1: "Eldritch",
+            origin2: null,
+            class1: "Incantor",
+            cost: 2
+        },
+        {
+            name: "Tristana",
+            role: "Attack Caster",
+            origin1: "Faerie",
+            origin2: null,
+            class1: "Blaster",
+            cost: 2
+        },
+        {
+            name: "Zilean",
+            role: "Magic Caster",
+            origin1: "Frost",
+            origin2: "Chrono",
+            class1: "Preserver",
+            cost: 2
+        },
+        {
+            name: "Ashe",
+            role: "Attack Carry",
+            origin1: "Eldritch",
+            origin2: null,
+            class1: "Multistriker",
+            cost: 1
+        },
+        {
+            name: "Blitzcrank",
+            role: "Magic Tank",
+            origin1: "Honeymancy",
+            origin2: null,
+            class1: "Vanguard",
+            cost: 1
+        },
+        {
+            name: "Elise",
+            role: "Magic Tank",
+            origin1: "Eldritch",
+            origin2: null,
+            class1: "Shapeshifter",
+            cost: 1
+        },
+        {
+            name: "Jax",
+            role: "Magic Tank",
+            origin1: "Chrono",
+            origin2: null,
+            class1: "Multistriker",
+            cost: 1
+        },
+        {
+            name: "Jayce",
+            role: "Attack Fighter",
+            origin1: "Portal",
+            origin2: null,
+            class1: "Shapeshifter",
+            cost: 1
+        },
+        {
+            name: "Lillia",
+            role: "Magic Tank",
+            origin1: "Faerie",
+            origin2: null,
+            class1: "Bastion",
+            cost: 1
+        },
+        {
+            name: "Nomsy",
+            role: "Attack Caster",
+            origin1: "Dragon",
+            origin2: null,
+            class1: "Hunter",
+            cost: 1
+        },
+        {
+            name: "Poppy",
+            role: "Attack Tank",
+            origin1: "Witchcraft",
+            origin2: null,
+            class1: "Bastion",
+            cost: 1
+        },
+        {
+            name: "Seraphine",
+            role: "Magic Caster",
+            origin1: "Faerie",
+            origin2: null,
+            class1: "Mage",
+            cost: 1
+        },
+		{
+            name: "Soraka",
+            role: "Magic Caster",
+            origin1: "Sugarcraft",
+            origin2: null,
+            class1: "Mage",
+			cost: 1
+        },
+		{
+            name: "Twitch",
+            role: "Attack Caster",
+            origin1: "Sugarcraft",
+            origin2: null,
+			class1: "Hunter",
+			cost: 1
+        },
+        {
+            name: "Warwick",
+            role: "Magic Caster",
+            origin1: "Frost",
+            origin2: null,
+			class1: "Vanguard",
+			cost: 1
+        },
+        {
+            name: "Ziggs",
+            role: "Attack Fighter",
+            origin1: "Honeymancy",
+            origin2: null,
+			class1: "Incantor",
+			cost: 1
+        },
+		        {
+            name: "Zoe",
+            role: "Attack Fighter",
+            origin1: "Portal",
+            origin2: "Witchcraft",
+			class1: "Scholar",
+			cost: 1
+        },
+
+		
+    ];
+
+
+    let currentQuestion = 0;
+    let score = 0;
+    let questions = [];
+    let currentQuizType;
+    let timer;
+    let timeLeft;
+    let totalQuestions = 5;
+
+    const slider = document.getElementById('questionSlider');
+
+    slider.oninput = function() {
+        switch(this.value) {
+            case "0":
+                totalQuestions = 5;
+                break;
+            case "1":
+                totalQuestions = 10;
+                break;
+            case "2":
+                totalQuestions = Infinity;
+                break;
+        }
+    }
+
+    function startQuiz(quizType) {
+        currentQuizType = quizType;
+        document.getElementById('quiz-menu').style.display = 'none';
+        document.getElementById('quiz-container').style.display = 'flex';
+        document.getElementById('slider-container').style.display = 'none';
+        currentQuestion = 0;
+        score = 0;
+        questions = [];
+        displayQuestion();
+    }
+
+    function stopQuiz() {
+        clearInterval(timer);
+        document.getElementById('quiz-container').style.display = 'none';
+        document.getElementById('quiz-menu').style.display = 'block';
+        document.getElementById('slider-container').style.display = 'flex';
+        currentQuestion = 0;
+        score = 0;
+        questions = [];
+        document.getElementById('score').textContent = 'Score: 0 / 0';
+        document.getElementById('result').textContent = '';
+    }
+
+    function generateNewQuestion(quizType) {
+        const hero = heroes[Math.floor(Math.random() * heroes.length)];
+        let question = { hero: hero };
+
+        switch (quizType) {
+            case 'heroes':
+                question.type = 'imageToName';
+                question.correctAnswer = hero.name;
+                question.options = shuffleArray(heroes.map(h => h.name).slice(0, 4));
+                break;
+            case 'classes-origins':
+                question.type = 'heroToClassOrigin';
+                question.correctAnswer = `${hero.origin1}${hero.origin2 ? ' / ' + hero.origin2 : ''} - ${hero.class1}${hero.class2 ? ' / ' + hero.class2 : ''}`;
+                question.options = [question.correctAnswer];
+                while (question.options.length < 4) {
+                    const randomHero = heroes[Math.floor(Math.random() * heroes.length)];
+                    const option = `${randomHero.origin1}${randomHero.origin2 ? ' / ' + randomHero.origin2 : ''} - ${randomHero.class1}${randomHero.class2 ? ' / ' + randomHero.class2 : ''}`;
+                    if (!question.options.includes(option)) {
+                        question.options.push(option);
+                    }
+                }
+                question.options = shuffleArray(question.options);
+                break;
+            case 'roles':
+                question.type = 'heroToRole';
+                question.correctAnswer = hero.role;
+                question.options = shuffleArray([...new Set(heroes.map(h => h.role))].slice(0, 4));
+                break;
+        }
+
+        if (!question.options.includes(question.correctAnswer)) {
+            question.options[Math.floor(Math.random() * question.options.length)] = question.correctAnswer;
+        }
+
+        return question;
+    }
+
+    function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+    }
+
+    function displayQuestion() {
+        if (currentQuestion >= totalQuestions) {
+            showFinalScore();
+            return;
+        }
+
+        const question = generateNewQuestion(currentQuizType);
+        questions.push(question);
+
+        const questionElement = document.getElementById('question');
+        const answersElement = document.getElementById('answers');
+        const imageElement = document.getElementById('question-image');
+
+        questionElement.innerHTML = '';
+        answersElement.innerHTML = '';
+        imageElement.src = `Hero/${question.hero.name.replace(/\s/g, '')}.png`;
+        imageElement.style.display = 'block';
+
+        switch (question.type) {
+            case 'imageToName':
+                questionElement.textContent = "Quel est le nom de ce héros ?";
+                break;
+            case 'heroToClassOrigin':
+                questionElement.textContent = `Quelles sont les origines et classes de ${question.hero.name} ?`;
+                break;
+            case 'heroToRole':
+                questionElement.textContent = `Quel est le rôle de ${question.hero.name} ?`;
+                break;
+        }
+
+        question.options.forEach((option, index) => {
+            const button = document.createElement('button');
+            button.textContent = `${String.fromCharCode(65 + index)}. ${option}`;
+            button.className = 'answer-button';
+            button.onclick = () => checkAnswer(option);
+            answersElement.appendChild(button);
+        });
+
+        startTimer();
+    }
+
+    function startTimer() {
+        clearInterval(timer);
+        timeLeft = 10;
+        updateTimerDisplay();
+        timer = setInterval(() => {
+            timeLeft--;
+            updateTimerDisplay();
+            if (timeLeft <= 0) {
+                clearInterval(timer);
+                checkAnswer(null);
+            }
+        }, 1000);
+    }
+
+    function updateTimerDisplay() {
+        document.getElementById('timer').textContent = `Temps restant: ${timeLeft}s`;
+    }
+
+    function checkAnswer(answer) {
+        clearInterval(timer);
+        const question = questions[currentQuestion];
+        const transitionElement = document.getElementById('transition');
+        const transitionTextElement = document.getElementById('transition-text');
+        const questionNumberElement = document.getElementById('question-number');
+        
+        let isCorrect = answer === question.correctAnswer;
+        
+        if (isCorrect) {
+            transitionTextElement.textContent = "Correct !";
+            transitionElement.className = "correct";
+            score++;
+        } else {
+            transitionTextElement.textContent = `Incorrect. La bonne réponse était : ${question.correctAnswer}`;
+            transitionElement.className = "incorrect";
+        }
+
+        currentQuestion++;
+        questionNumberElement.textContent = `Question ${currentQuestion} ${totalQuestions === Infinity ? '' : `/ ${totalQuestions}`}`;
+        
+        transitionElement.style.display = "flex";
+        setTimeout(() => {
+            transitionElement.style.display = "none";
+            if (totalQuestions === Infinity) {
+                if (isCorrect) {
+                    displayQuestion();
+                } else {
+                    showFinalScore();
+                }
+            } else if (currentQuestion < totalQuestions) {
+                displayQuestion();
+            } else {
+                showFinalScore();
+            }
+        }, 2000);
+
+        updateScore();
+    }
+
+    function updateScore() {
+        document.getElementById('score').textContent = `Score: ${score} / ${currentQuestion}`;
+    }
+
+    function showFinalScore() {
+        const quizContainer = document.getElementById('quiz-container');
+        quizContainer.innerHTML = `
+            <h2>Quiz terminé !</h2>
+            <p>Votre score final est : ${score} / ${currentQuestion}</p>
+            <button onclick="location.reload()" class="quiz-button">Recommencer le quiz</button>
+        `;
+    }
+    </script>
+</body>
+</html>

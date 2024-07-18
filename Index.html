@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TFT Saison 12</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: black;
+            color: white;
+            text-align: center;
+            margin: 0;
+            padding: 20px;
+        }
+        .nav {
+            background-color: #333;
+            overflow: hidden;
+            margin-bottom: 50px;
+        }
+        .nav a {
+            float: center;
+            color: #f2f2f2;
+            text-align: center;
+            padding: 14px 16px;
+            text-decoration: none;
+            font-size: 17px;
+        }
+        .nav a:hover {
+            background-color: #ddd;
+            color: black;
+        }
+        .nav a.active {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-around;
+            align-items: center;
+            margin-bottom: 20px;
+            gap: 55px;
+        }
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .controls button, .controls select {
+            margin: 0;
+        }
+        .controls label {
+            margin-right: 5px;
+        }
+        .controls button {
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            padding: 10px 10px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 20px;
+            margin: 2px 2px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        .controls button.active {
+            background-color: #45a049;
+        }
+        .gallery {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 1px;
+        }
+        .hero-row {
+            display: flex;
+            justify-content: center;
+            width: 100%;
+        }
+        .hero-card {
+            width: 80px;
+            margin: 3px;
+            padding: 3px;
+            background-color: #333;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .hero-card img {
+            width: 70px;
+            height: 70px;
+            object-fit: cover;
+            border-radius: 10%;
+            border: 3px solid;
+        }
+        .hero-card h3 {
+            font-size: 12px;
+            margin: 3px 0;
+        }
+        .hero-card img.cost-1 { border-color: #808080; }
+        .hero-card img.cost-2 { border-color: #00b300; }
+        .hero-card img.cost-3 { border-color: #0052cc; }
+        .hero-card img.cost-4 { border-color: #a300a3; }
+        .hero-card img.cost-5 { border-color: #ffcc00; }
+        .popup {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.8);
+        }
+        .popup-content {
+            background-color: #333;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 600px;
+            border-radius: 10px;
+        }
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .close:hover,
+        .close:focus {
+            color: #fff;
+            text-decoration: none;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="nav">
+        <a href="Index.html" class="active">Accueil</a>
+        <a href="Quiz.html">Quiz</a>
+        <a href="tft-notes-layout.html">Notes LIVE</a>
+        <a href="#">À propos</a>
+    </div>
+
+    <h1>TFT Saison 12</h1>
+
+    <div class="controls">
+        <div class="control-group">
+            <label>Trier par:</label>
+            <button onclick="sortHeroes('cost')" class="active">Coût</button>
+            <button onclick="sortHeroes('name')">Nom</button>
+        </div>
+        <div class="control-group">
+            <label>Origine:</label>
+            <select id="originFilter" onchange="filterHeroes()">
+                <option value="Toutes">Toutes</option>
+            </select>
+        </div>
+        <div class="control-group">
+            <label>Classe:</label>
+            <select id="classFilter" onchange="filterHeroes()">
+                <option value="Toutes">Toutes</option>
+            </select>
+        </div>
+        <div class="control-group">
+            <label>Coût:</label>
+            <button onclick="filterByCost('Tous')">Tous</button>
+            <button onclick="filterByCost(1)">1</button>
+            <button onclick="filterByCost(2)">2</button>
+            <button onclick="filterByCost(3)">3</button>
+            <button onclick="filterByCost(4)">4</button>
+            <button onclick="filterByCost(5)">5</button>
+        </div>
+        <button onclick="resetFilters()">Réinitialiser</button>
+    </div>
+
+    <div id="heroGallery" class="gallery"></div>
+
+    <div id="popup" class="popup">
+        <div class="popup-content">
+            <span class="close" onclick="closePopup()">&times;</span>
+            <h2 id="popupName"></h2>
+            <img id="popupImage" src="" alt="Hero Image">
+            <p id="popupInfo"></p>
+        </div>
+    </div>
+
+    <script>
+    // Le script JavaScript reste inchangé
+
+    const heroes = [
+ {
+            name: "Briar",
+            role: "Attack Fighter",
+            origin1: "Ravenous",
+            origin2: "Eldritch",
+            class1: "Shapeshifter",
+            cost: 5
+        },
+        {
+            name: "Camille",
+            role: "Attack Fighter",
+            origin1: "Chrono",
+            origin2: null,
+            class1: "Multistriker",
+            cost: 5
+        },
+        {
+            name: "Diana",
+            role: "Magic Fighter",
+            origin1: "Frost",
+            origin2: null,
+            class1: "Bastion",
+            cost: 5
+        },
+        {
+            name: "Milio",
+            role: "Magic Caster",
+            origin1: "Faerie",
+            origin2: null,
+            class1: "Scholar",
+            cost: 5
+        },
+        {
+            name: "Morgana",
+            role: "Magic Fighter",
+            origin1: "Witchcraft",
+            origin2: null,
+            class1: "Bat Queen",
+            class2: "Preserver",
+            cost: 5
+        },
+        {
+            name: "Norra & Yuumi",
+            role: "Magic Caster",
+            origin1: "Portal",
+            origin2: null,
+            class1: "Mage",
+			class2: "Best Friends",
+            cost: 5
+        },
+        {
+            name: "Smolder",
+            role: "Attack Carry",
+            origin1: "Dragon",
+            origin2: null,
+            class1: "Blaster",
+            cost: 5
+        },
+        {
+            name: "Xerath",
+            role: "Magic Caster",
+            origin1: "Arcana",
+            origin2: null,
+            class1: "Ascendant",
+            cost: 5
+        },
+        {
+            name: "Fiora",
+            role: "Attack Fighter",
+            origin1: "Witchcraft",
+            origin2: null,
+            class1: "Warrior",
+            cost: 4
+        },
+        {
+            name: "Gwen",
+            role: "Magic Fighter",
+            origin1: "Sugarcraft",
+            origin2: null,
+            class1: "Warrior",
+            cost: 4
+        },
+        {
+            name: "Kalista",
+            role: "Attack Carry",
+            origin1: "Faerie",
+            origin2: null,
+            class1: "Multistriker",
+            cost: 4
+        },
+        {
+            name: "Karma",
+            role: "Magic Caster",
+            origin1: "Chrono",
+            origin2: null,
+            class1: "Incantor",
+            cost: 4
+        },
+        {
+            name: "Nami",
+            role: "Magic Caster",
+            origin1: "Eldritch",
+            origin2: null,
+            class1: "Mage",
+            cost: 4
+        },
+        {
+            name: "Nasus",
+            role: "Attack Tank",
+            origin1: "Pyro",
+            origin2: null,
+            class1: "Shapeshifter",
+            cost: 4
+        },
+        {
+            name: "Olaf",
+            role: "Attack Fighter",
+            origin1: "Frost",
+            origin2: null,
+            class1: "Hunter",
+            cost: 4
+        },
+        {
+            name: "Rakan",
+            role: "Magic Tank",
+            origin1: "Faerie",
+            origin2: null,
+            class1: "Preserver",
+            cost: 4
+        },
+        {
+            name: "Ryze",
+            role: "Magic Caster",
+            origin1: "Portal",
+            origin2: null,
+            class1: "Scholar",
+            cost: 4
+        },
+        {
+            name: "Tahm Kench",
+            role: "Magic Tank",
+            origin1: "Arcana",
+            origin2: null,
+            class1: "Vanguard",
+            cost: 4
+        },
+        {
+            name: "Taric",
+            role: "Magic Tank",
+            origin1: "Portal",
+            origin2: null,
+            class1: "Bastion",
+            cost: 4
+        },
+        {
+            name: "Varus",
+            role: "Attack Caster",
+            origin1: "Pyro",
+            origin2: null,
+            class1: "Blaster",
+            cost: 4
+        },
+        {
+            name: "Bard",
+            role: "Magic Caster",
+            origin1: "Sugarcraft",
+            origin2: null,
+            class1: "Preserver",
+            class2: "Scholar",
+            cost: 3
+        },
+        {
+            name: "Ezreal",
+            role: "Attack Caster",
+            origin1: "Portal",
+            origin2: null,
+            class1: "Blaster",
+            cost: 3
+        },
+        {
+            name: "Hecarim",
+            role: "Attack Fighter",
+            origin1: "Arcana",
+            origin2: null,
+            class1: "Bastion",
+            class2: "Multistriker",
+            cost: 3
+        },
+        {
+            name: "Hwei",
+            role: "Magic Caster",
+            origin1: "Frost",
+            origin2: null,
+            class1: "Blaster",
+            cost: 3
+        },
+        {
+            name: "Jinx",
+            role: "Attack Carry",
+            origin1: "Sugarcraft",
+            origin2: null,
+            class1: "Hunter",
+            cost: 3
+        },
+        {
+            name: "Katarina",
+            role: "Magic Reaper",
+            origin1: "Faerie",
+            origin2: null,
+            class1: "Warrior",
+            cost: 3
+        },
+        {
+            name: "Mordekaiser",
+            role: "Magic Tank",
+            origin1: "Eldritch",
+            origin2: null,
+            class1: "Vanguard",
+            cost: 3
+        },
+        {
+            name: "Neeko",
+            role: "Magic Tank",
+            origin1: "Witchcraft",
+            origin2: null,
+            class1: "Shapeshifter",
+            cost: 3
+        },
+        {
+            name: "Shen",
+            role: "Magic Tank",
+            origin1: "Pyro",
+            origin2: null,
+            class1: "Bastion",
+            cost: 3
+        },
+        {
+            name: "Swain",
+            role: "Magic Tank",
+            origin1: "Frost",
+            origin2: null,
+            class1: "Shapeshifter",
+            cost: 3
+        },
+        {
+            name: "Veigar",
+            role: "Magic Caster",
+            origin1: "Honeymancy",
+            origin2: null,
+            class1: "Mage",
+            cost: 3
+        },
+        {
+            name: "Vex",
+            role: "Magic Tank",
+            origin1: "Chrono",
+            origin2: null,
+            class1: "Mage",
+            cost: 3
+        },
+        {
+            name: "Wukong",
+            role: "Magic Tank",
+            origin1: "Druid",
+            origin2: null,
+            class1: null,
+            cost: 3
+        },
+        {
+            name: "Ahri",
+            role: "Magic Caster",
+            origin1: "Pyro",
+            origin2: "Arcana",
+            class1: "Scholar",
+            cost: 2
+        },
+        {
+            name: "Akali",
+            role: "Attack Reaper",
+            origin1: "Pyro",
+            origin2: null,
+            class1: "Warrior",
+            class2: "Multistriker",
+            cost: 2
+        },
+        {
+            name: "Cassiopeia",
+            role: "Magic Carry",
+            origin1: "Witchcraft",
+            origin2: null,
+            class1: "Incantor",
+            cost: 2
+        },
+        {
+            name: "Galio",
+            role: "Magic Tank",
+            origin1: "Portal",
+            origin2: null,
+            class1: "Vanguard",
+            class2: "Mage",
+            cost: 2
+        },
+        {
+            name: "Kassadin",
+            role: "Magic Fighter",
+            origin1: "Portal",
+            origin2: null,
+            class1: "Multistriker",
+            cost: 2
+        },
+        {
+            name: "Kog'Maw",
+            role: "Attack Carry",
+            origin1: "Honeymancy",
+            origin2: null,
+            class1: "Hunter",
+            cost: 2
+        },
+        {
+            name: "Nilah",
+            role: "Attack Reaper",
+            origin1: "Eldritch",
+            origin2: null,
+            class1: "Warrior",
+            cost: 2
+        },
+        {
+            name: "Nunu",
+            role: "Magic Tank",
+            origin1: "Honeymancy",
+            origin2: null,
+            class1: "Bastion",
+            cost: 2
+        },
+        {
+            name: "Rumble",
+            role: "Magic Tank",
+            origin1: "Sugarcraft",
+            origin2: null,
+            class1: "Vanguard",
+            class2: "Blaster",
+            cost: 2
+        },
+        {
+            name: "Shyvana",
+            role: "Magic Tank",
+            origin1: "Dragon",
+            origin2: null,
+            class1: "Shapeshifter",
+            cost: 2
+        },
+        {
+            name: "Syndra",
+            role: "Magic Caster",
+            origin1: "Eldritch",
+            origin2: null,
+            class1: "Incantor",
+            cost: 2
+        },
+        {
+            name: "Tristana",
+            role: "Attack Caster",
+            origin1: "Faerie",
+            origin2: null,
+            class1: "Blaster",
+            cost: 2
+        },
+        {
+            name: "Zilean",
+            role: "Magic Caster",
+            origin1: "Frost",
+            origin2: "Chrono",
+            class1: "Preserver",
+            cost: 2
+        },
+        {
+            name: "Ashe",
+            role: "Attack Carry",
+            origin1: "Eldritch",
+            origin2: null,
+            class1: "Multistriker",
+            cost: 1
+        },
+        {
+            name: "Blitzcrank",
+            role: "Magic Tank",
+            origin1: "Honeymancy",
+            origin2: null,
+            class1: "Vanguard",
+            cost: 1
+        },
+        {
+            name: "Elise",
+            role: "Magic Tank",
+            origin1: "Eldritch",
+            origin2: null,
+            class1: "Shapeshifter",
+            cost: 1
+        },
+        {
+            name: "Jax",
+            role: "Magic Tank",
+            origin1: "Chrono",
+            origin2: null,
+            class1: "Multistriker",
+            cost: 1
+        },
+        {
+            name: "Jayce",
+            role: "Attack Fighter",
+            origin1: "Portal",
+            origin2: null,
+            class1: "Shapeshifter",
+            cost: 1
+        },
+        {
+            name: "Lillia",
+            role: "Magic Tank",
+            origin1: "Faerie",
+            origin2: null,
+            class1: "Bastion",
+            cost: 1
+        },
+        {
+            name: "Nomsy",
+            role: "Attack Caster",
+            origin1: "Dragon",
+            origin2: null,
+            class1: "Hunter",
+            cost: 1
+        },
+        {
+            name: "Poppy",
+            role: "Attack Tank",
+            origin1: "Witchcraft",
+            origin2: null,
+            class1: "Bastion",
+            cost: 1
+        },
+        {
+            name: "Seraphine",
+            role: "Magic Caster",
+            origin1: "Faerie",
+            origin2: null,
+            class1: "Mage",
+            cost: 1
+        },
+		{
+            name: "Soraka",
+            role: "Magic Caster",
+            origin1: "Sugarcraft",
+            origin2: null,
+            class1: "Mage",
+			cost: 1
+        },
+		{
+            name: "Twitch",
+            role: "Attack Caster",
+            origin1: "Sugarcraft",
+            origin2: null,
+			class1: "Hunter",
+			cost: 1
+        },
+        {
+            name: "Warwick",
+            role: "Magic Caster",
+            origin1: "Frost",
+            origin2: null,
+			class1: "Vanguard",
+			cost: 1
+        },
+        {
+            name: "Ziggs",
+            role: "Attack Fighter",
+            origin1: "Honeymancy",
+            origin2: null,
+			class1: "Incantor",
+			cost: 1
+        },
+		        {
+            name: "Zoe",
+            role: "Attack Fighter",
+            origin1: "Portal",
+            origin2: "Witchcraft",
+			class1: "Scholar",
+			cost: 1
+        },
+
+		
+    ];
+
+let currentSortCriteria = 'cost';
+    let currentOriginFilter = 'Toutes';
+    let currentClassFilter = 'Toutes';
+    let currentCostFilter = 'Tous';
+    const heroesPerRow = 8;
+
+    function initializeFilters() {
+        const originFilter = document.getElementById('originFilter');
+        const classFilter = document.getElementById('classFilter');
+        const origins = new Set();
+        const classes = new Set();
+
+        heroes.forEach(hero => {
+            if (hero.origin1) origins.add(hero.origin1);
+            if (hero.origin2) origins.add(hero.origin2);
+            if (hero.class1) classes.add(hero.class1);
+            if (hero.class2) classes.add(hero.class2);
+        });
+
+        [...origins].sort().forEach(origin => {
+            const option = document.createElement('option');
+            option.value = origin;
+            option.textContent = origin;
+            originFilter.appendChild(option);
+        });
+
+        [...classes].sort().forEach(heroClass => {
+            const option = document.createElement('option');
+            option.value = heroClass;
+            option.textContent = heroClass;
+            classFilter.appendChild(option);
+        });
+    }
+
+    function sortHeroes(criteria) {
+        currentSortCriteria = criteria;
+        document.querySelectorAll('.controls button').forEach(button => {
+            button.classList.remove('active');
+        });
+        document.querySelector(`.controls button[onclick="sortHeroes('${criteria}')"]`).classList.add('active');
+        displayHeroes();
+    }
+
+    function filterHeroes() {
+        currentOriginFilter = document.getElementById('originFilter').value;
+        currentClassFilter = document.getElementById('classFilter').value;
+        displayHeroes();
+    }
+
+    function filterByCost(cost) {
+        currentCostFilter = cost;
+        displayHeroes();
+    }
+
+    function resetFilters() {
+        currentOriginFilter = 'Toutes';
+        currentClassFilter = 'Toutes';
+        currentCostFilter = 'Tous';
+        document.getElementById('originFilter').value = 'Toutes';
+        document.getElementById('classFilter').value = 'Toutes';
+        displayHeroes();
+    }
+
+    function displayHeroes() {
+        const gallery = document.getElementById('heroGallery');
+        gallery.innerHTML = '';
+
+        const filteredHeroes = heroes.filter(hero => 
+            (currentOriginFilter === 'Toutes' || hero.origin1 === currentOriginFilter || hero.origin2 === currentOriginFilter) &&
+            (currentClassFilter === 'Toutes' || hero.class1 === currentClassFilter || hero.class2 === currentClassFilter) &&
+            (currentCostFilter === 'Tous' || hero.cost === currentCostFilter)
+        );
+
+        filteredHeroes.sort((a, b) => {
+            if (currentSortCriteria === 'name') {
+                return a.name.localeCompare(b.name);
+            } else if (currentSortCriteria === 'cost') {
+                return a.cost - b.cost;  // Tri croissant
+            }
+        });
+
+        for (let i = 0; i < filteredHeroes.length; i += heroesPerRow) {
+            const rowDiv = document.createElement('div');
+            rowDiv.className = 'hero-row';
+            
+            const rowHeroes = filteredHeroes.slice(i, i + heroesPerRow);
+            rowHeroes.forEach(hero => {
+                const heroCard = document.createElement('div');
+                heroCard.className = 'hero-card';
+                heroCard.innerHTML = `
+                    <img src="Hero/${hero.name.replace(/\s/g, '')}.png" alt="${hero.name}" class="cost-${hero.cost}">
+                    <h3>${hero.name}</h3>
+                `;
+                heroCard.onclick = () => showPopup(hero);
+                rowDiv.appendChild(heroCard);
+            });
+            
+            gallery.appendChild(rowDiv);
+        }
+    }
+
+    function showPopup(hero) {
+        const popup = document.getElementById('popup');
+        const popupName = document.getElementById('popupName');
+        const popupImage = document.getElementById('popupImage');
+        const popupInfo = document.getElementById('popupInfo');
+
+        popupName.textContent = hero.name;
+        popupImage.src = `Hero/${hero.name.replace(/\s/g, '')}.png`;
+        popupInfo.innerHTML = `
+            <p>Coût: ${hero.cost}</p>
+            <p>Rôle: ${hero.role}</p>
+            <p>Origine: ${hero.origin1}${hero.origin2 ? ', ' + hero.origin2 : ''}</p>
+            <p>Classe: ${hero.class1}${hero.class2 ? ', ' + hero.class2 : ''}</p>
+        `;
+
+        popup.style.display = 'block';
+    }
+
+    function closePopup() {
+        document.getElementById('popup').style.display = 'none';
+    }
+
+    window.onclick = function(event) {
+        const popup = document.getElementById('popup');
+        if (event.target == popup) {
+            popup.style.display = 'none';
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        initializeFilters();
+        sortHeroes('cost');
+    });
+    </script>
+</body>
+</html>
